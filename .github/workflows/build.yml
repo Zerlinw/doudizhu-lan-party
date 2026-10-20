@@ -1,0 +1,67 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Shared tests + Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Unit tests (pure Kotlin rules / AI / protocol)
+        run: ./gradlew :shared:jvmTest --stacktrace
+
+      - name: Assemble debug APK
+        run: ./gradlew :androidApp:assembleDebug --stacktrace
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ddz-debug-apk
+          path: androidApp/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  desktop:
+    name: Desktop compile (M5)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew :desktopApp:compileKotlin --stacktrace
+
+  ios:
+    name: iOS compile check (M5)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew :shared:compileKotlinIosArm64 --stacktrace

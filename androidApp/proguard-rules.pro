@@ -1,0 +1,3 @@
+-dontwarn kotlinx.serialization.**
+-keep class com.ddz.shared.** { *; }
+-keepclassmembers class com.ddz.shared.game.core.** { *; }

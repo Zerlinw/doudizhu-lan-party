@@ -1,0 +1,32 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+local.properties
+
+# Android
+*.apk
+*.aab
+*.ap_
+*.dex
+captures/
+.externalNativeBuild/
+.cxx/
+output.json
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Toolchain and local secrets (never committed)
+.tools/
+dist/
+keystore.properties
+local.properties
+*.jks
+*.keystore
+
+# Kotlin/Native
+.kotlin/
