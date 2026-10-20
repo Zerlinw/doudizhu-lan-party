@@ -45,6 +45,10 @@
 - Android SDK Platform 35 + Build-Tools 35.0.0
 - 设备 Android 7.0（API 24）及以上
 
+> 国内网络如果 `./gradlew` 卡在下载 Gradle，把
+> `gradle/wrapper/gradle-wrapper.properties` 的 `distributionUrl` 换成
+> `https://mirrors.cloud.tencent.com/gradle/gradle-8.9-bin.zip` 即可。
+
 ```bash
 # 本仓库自带 Gradle Wrapper
 ./gradlew :androidApp:assembleRelease
