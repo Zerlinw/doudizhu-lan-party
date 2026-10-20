@@ -6,8 +6,8 @@ package com.ddz.shared.net
  * The shared session/state machine is platform-agnostic; M6 will implement these
  * actuals with Network.framework (or BSD sockets) plus NSNetService discovery.
  */
-actual class TcpServer actual constructor(private val requestedPort: Int) {
-    actual val boundPort: Int get() = requestedPort
+actual class TcpServer actual constructor(private val port: Int) {
+    actual val boundPort: Int get() = port
 
     actual suspend fun accept(): Connection =
         throw UnsupportedOperationException("iOS TCP transport lands in M6 (Network.framework)")
