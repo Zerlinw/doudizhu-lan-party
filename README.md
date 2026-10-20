@@ -26,6 +26,8 @@
 |---|---|---|
 | <img src="docs/screenshots/home.png" width="240" alt="首页"/> | <img src="docs/screenshots/lobby.png" width="240" alt="大厅"/> | <img src="docs/screenshots/table.png" width="240" alt="牌桌"/> |
 
+构建、签名、真机验证的完整记录见 [docs/verification.md](docs/verification.md)。
+
 ## 3. 已实现 / 未实现
 
 | 里程碑 | 状态 | 说明 |
