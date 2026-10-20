@@ -1,32 +1,62 @@
-# Gradle
+# ---------------------------------------------------------------------------
+# Gradle / Kotlin
+# ---------------------------------------------------------------------------
 .gradle/
 build/
+out/
+.kotlin/
 !gradle/wrapper/gradle-wrapper.jar
-local.properties
+gradle-app.setting
+.gradletasknamecache
 
-# Android
+# ---------------------------------------------------------------------------
+# Local machine configuration & secrets (never commit)
+# ---------------------------------------------------------------------------
+local.properties
+keystore.properties
+secrets.properties
+.env
+*.jks
+*.keystore
+
+# ---------------------------------------------------------------------------
+# Android build output
+# ---------------------------------------------------------------------------
 *.apk
 *.aab
 *.ap_
 *.dex
+*.idsig
 captures/
 .externalNativeBuild/
 .cxx/
 output.json
+*.hprof
+hs_err_pid*
+*.log
 
-# IDE
+# ---------------------------------------------------------------------------
+# Toolchain / local distribution copies
+# ---------------------------------------------------------------------------
+.tools/
+dist/
+
+# ---------------------------------------------------------------------------
+# IDE / OS
+# ---------------------------------------------------------------------------
 .idea/
 *.iml
 .vscode/
+.fleet/
 .DS_Store
+Thumbs.db
+desktop.ini
 
-# Toolchain and local secrets (never committed)
-.tools/
-dist/
-keystore.properties
-local.properties
-*.jks
-*.keystore
-
-# Kotlin/Native
-.kotlin/
+# ---------------------------------------------------------------------------
+# iOS / Xcode
+# ---------------------------------------------------------------------------
+iosApp/Pods/
+iosApp/DerivedData/
+**/xcuserdata/
+*.xcuserstate
+*.xccheckout
