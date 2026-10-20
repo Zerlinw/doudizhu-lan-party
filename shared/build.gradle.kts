@@ -7,6 +7,12 @@ plugins {
 }
 
 kotlin {
+    // expect/actual classes are used for TCP and discovery; opt in for every
+    // target (JVM, Android and Native), not only the JVM compile tasks.
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
     androidTarget {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
@@ -64,8 +70,8 @@ android {
     }
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    compilerOptions {
-        freeCompilerArgs.add("-Xexpect-actual-classes")
+tasks.withType<Test>().configureEach {
+    testLogging {
+        events("failed", "skipped")
     }
 }

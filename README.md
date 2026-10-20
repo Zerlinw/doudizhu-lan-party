@@ -2,7 +2,7 @@
 
 > 零服务器、点对点、三台手机开一桌。房主设备是权威 Host，其余设备只发送意图、渲染快照。
 >
-> 作者：**Zerlin** · 首期 Android，架构预留 Desktop / iOS。
+> 作者：**Zerlin** · 仓库：[github.com/Zerlinw/doudizhu-lan-party](https://github.com/Zerlinw/doudizhu-lan-party) · 首期 Android，架构预留 Desktop / iOS。
 
 ---
 
