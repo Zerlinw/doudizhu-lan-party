@@ -12,21 +12,23 @@
 
 一个完整的局域网斗地主工程：
 
-- **纯 Kotlin 规则内核**：54 张牌、13 种牌型、叫分、炸弹/王炸、春天/反春天、结算。
+- **纯 Kotlin 规则内核**：54 张牌、16 种牌型（含软炸/纯癞子炸）、叫分、炸弹/王炸、春天/反春天、结算。
+- **天地癞子玩法**：天癞子 + 地癞子共 8 张万能牌，软炸 / 硬炸 / 纯癞子炸，炸弹按张数与类型比大小。
 - **Host 权威 + TCP 长连接**：房主执行唯一 reducer，广播全量快照；客户端零规则计算。
 - **NSD 服务发现**：`_doudizhu._tcp` 自动找房，手动 `IP:端口` 兜底。
 - **断线重连**：心跳 5s / 15s 超时、指数退避重连、`SYNC_REQ(lastKnownSeq)` 全量快照恢复、掉线 AI 托管。
 - **两种 AI**：<1ms 启发式（默认）+ 800ms 硬预算蒙特卡洛（高难度可选）。
-- **Compose 深色木质 UI**：扇形手牌、发牌动画、炸弹闪光、地主底牌翻开、结算面板、点击音效由系统触感替代。
+- **Compose 深色木质 UI**：扇形手牌、癞子高亮、发牌动画、炸弹闪光、地主底牌翻开、结算面板。
+- **横竖屏自适应**：牌桌横屏紧凑布局，首页/牌桌一键切换方向。
 - **CI**：GitHub Actions 跑单测 + Debug APK + Desktop 编译。
 
 ## 2. 真机效果
 
-在 OnePlus PLC110 / Android 16 真机实拍（PC 客户端通过 TCP 加入手机房间）：
+在 OnePlus PLC110 / Android 16 真机实拍：
 
-| 首页 | 房间大厅 | 牌桌 |
-|---|---|---|
-| <img src="docs/screenshots/home.png" width="240" alt="首页"/> | <img src="docs/screenshots/lobby.png" width="240" alt="大厅"/> | <img src="docs/screenshots/table.png" width="240" alt="牌桌"/> |
+| 首页（选玩法） | 经典牌桌 | 天地癞子 · 竖屏 | 天地癞子 · 横屏 |
+|---|---|---|---|
+| <img src="docs/screenshots/home.png" width="190" alt="首页"/> | <img src="docs/screenshots/table.png" width="190" alt="经典牌桌"/> | <img src="docs/screenshots/laizi-table.png" width="190" alt="癞子竖屏"/> | <img src="docs/screenshots/laizi-landscape.png" width="300" alt="癞子横屏"/> |
 
 构建、签名、真机验证的完整记录见 [docs/verification.md](docs/verification.md)。
 
@@ -35,9 +37,9 @@
 | 里程碑 | 状态 | 说明 |
 |---|---|---|
 | M1 工程骨架 | ✅ | 版本目录、多模块、CI、木质首页 |
-| M2 单机核心规则 | ✅ | 13 种牌型、reducer、3 AI 练习模式、61 个测试 |
+| M2 单机核心规则 | ✅ | 经典 13 种 + 癞子 3 种牌型、reducer、3 AI 练习、71 个测试 |
 | M3 局域网联机 | ✅ | NSD + TCP + 心跳 + 重连快照 + 大厅 + 手动 IP |
-| M4 动效体验 | ✅ | 发牌/出牌/炸弹/地主底牌动画、震动、托管提示 |
+| M4 动效体验 | ✅ | 癞子高亮、发牌/出牌/炸弹/底牌动画、震动、横竖屏 |
 | M5 跨平台收尾 | ◐ | Desktop 已编译（预览 UI）；iOS 目标仅在 macOS 配置，`iosMain` 为编译桩 |
 
 未做（有意留白）：语音/音效资源（用触感替代）、房间密码、观战、战绩持久化、iOS 真机网络。
@@ -70,10 +72,11 @@ adb install -r androidApp\build\outputs\apk\release\androidApp-release.apk
 ### 4.2 三台手机开一局
 
 1. 三台手机连**同一个 Wi-Fi**。
-2. 房主点「创建房间」，大厅会显示 `IP:端口`（默认 `9527`，被占用会自动顺延）。
+2. 房主在首页选「经典」或「天地癞子」，再点「创建房间」；大厅显示 `IP:端口`（默认 `9527`，被占用自动顺延）。
 3. 另外两台点「加入房间」→ 从 NSD 列表选择房间；搜不到就点「手动连接」，输入房主屏幕上的 `IP:端口`。
 4. 三人入座后房主点「开始游戏」。
-5. 单机体验：首页「单机练习」，两个启发式 AI 同桌。
+5. 单机体验：首页选玩法 → 「单机练习」，两个启发式 AI 同桌。
+6. 横屏：首页或牌桌右上角点「横屏 / 竖屏」；手机自动旋转也会触发横屏紧凑布局。
 
 > 房主切后台会中断牌局；Android 的省电策略可能杀 NSD，手动 IP 始终可用。
 
@@ -94,7 +97,7 @@ adb install -r androidApp\build\outputs\apk\release\androidApp-release.apk
 │     ├─ androidMain/          # NsdManager + java.net actual
 │     ├─ jvmMain/              # UDP 广播发现 + java.net actual（Desktop）
 │     ├─ iosMain/              # 编译桩（macOS 宿主才启用 iOS target）
-│     └─ commonTest/           # 60 个测试：牌型/比较/reducer/AI/协议
+│     └─ commonTest/           # 71 个测试：牌型/癞子/比较/reducer/AI/协议
 ├─ docs/rules.md               # 规则口径（与实现一一对应）
 ├─ docs/protocol.md            # 帧格式、消息表、重连语义
 ├─ keystore/                   # 本地签名材料（.gitignore）
@@ -123,6 +126,7 @@ Client B ── PLAY ─────▶ Host validate → reduce → seq+1
 
 - `GameState.seq` 每接受一个动作 +1；客户端只接受 `seq > lastSeq` 的快照。
 - 快照**按座位脱敏**：只有自己的手牌，其他人仅保留 `cardCount`；底牌在叫地主前隐藏。
+- 快照同时携带 `mode` 与 `laizi`（天/地癞子点数），客户端无需自行推算。
 - 重连：`JOIN(同名)` 抢回原座位 → `SYNC_REQ(lastSeq)`；Host 发现落后就回全量快照，没落后回 `ACK`。
 - Host 15s 收不到心跳即判定掉线 → `SetOnline(false)` → AI 托管继续打；重新连上自动交还控制权。
 - 全量快照 < 4KB（有测试断言），不做增量回放。
@@ -136,7 +140,8 @@ Client B ── PLAY ─────▶ Host validate → reduce → seq+1
 - 叫分：1/2/3 分，三家各一次机会，3 分立即定地主；全不叫自动重新发牌。
 - 顺子 ≥5 张、连对 ≥3 对、飞机 ≥2 个连续三张；2 和王不能进入连牌。
 - 四带二 / 四带两对：两对必须不同点数。
-- 炸弹、王炸各 ×2；底牌含王 ×2；春天 / 反春天各 ×2。
+- 经典模式：炸弹、王炸各 ×2；底牌含王 ×2；春天 / 反春天各 ×2。
+- 天地癞子：8 张万能牌（天/地各 4 张），软炸 < 硬炸 < 纯癞子炸，炸弹按张数优先比较；4 软 ×2、4 硬/癞 ×4、5+ 炸/王炸 ×6。
 - 地主输赢双倍，农民单倍，三家分数总和为 0。
 
 细节与示例见 [docs/rules.md](docs/rules.md)。
@@ -147,14 +152,15 @@ Client B ── PLAY ─────▶ Host validate → reduce → seq+1
 ./gradlew :shared:jvmTest
 ```
 
-当前 **61 个测试全绿**，覆盖：
+当前 **71 个测试全绿**，覆盖：
 
-- 13 种牌型的正例/反例、边界（2 不能进顺子、四带两对同点对子非法）；
+- 16 种牌型的正例/反例、边界（2 不能进顺子、四带两对同点对子非法）；
+- 天地癞子：软炸/硬炸/纯癞子炸识别、4→12 张炸弹阶梯、癞子补顺子/连对/飞机、癞子不能当王；
 - `canBeat` 矩阵（炸弹/王炸/长度/翅膀）；
 - 发牌 17×3+3、叫分、全不叫重发、出牌/过牌、两家过牌重新领出；
 - 炸弹翻倍、春天、反春天、零和结算、托管兜底；
-- AI 不拆炸弹、队友让牌、一手走完、自对弈 5 局全部收敛；
-- 协议 14 类消息往返、未知类型/载荷不匹配/超长帧/seq 负值拒绝、快照脱敏；
+- AI 不拆炸弹、队友让牌、一手走完、经典/癞子自对弈全部收敛；
+- 协议 14 类消息往返、未知类型/载荷不匹配/超长帧/seq 负值拒绝、快照脱敏与癞子状态序列化；
 - **JVM 回环集成测试**：真实 TCP 端口 + 真实 Host/Client 状态机，两台客户端同时入座、发牌、快照脱敏。
 
 ## 9. 签名
@@ -193,7 +199,8 @@ keyPassword=******
 3. 房主是单点：房主退出即解散；没有 host 迁移。
 4. 音效未内置资源，炸弹用系统触感反馈。
 5. NSD 在部分 ROM 上会被限流，手动 IP 是既定一级兜底。
+6. 横屏为紧凑布局，超小屏（<340dp 高）可能压缩牌桌信息；横屏按钮在首页/牌桌右上角。
 
 ---
 
-**Zerlin's LAN Party** · Kotlin 2.1 · Compose Multiplatform 1.7 · AGP 8.7
+**Zerlin's LAN Party v1.1.0** · Kotlin 2.1 · Compose Multiplatform 1.7 · AGP 8.7

@@ -50,3 +50,14 @@ fun dealCards(seed: Long): DealResult {
     }
     return DealResult(hands = hands, bottomCards = deck.subList(51, 54).sorted())
 }
+
+/**
+ * Deterministically pick a 天/地癞子 rank. Jokers are never wild.
+ * [exclude] prevents the 地癞子 from reusing the 天癞子 rank.
+ */
+fun pickLaiziRank(seed: Long, exclude: Set<Rank> = emptySet()): Rank {
+    val candidates = Rank.normal().filterNot { it in exclude }
+    require(candidates.isNotEmpty()) { "No laizi rank left after excluding $exclude" }
+    val random = DeterministicRandom(seed xor 0x5DEECE66DL)
+    return candidates[random.nextInt(candidates.size)]
+}

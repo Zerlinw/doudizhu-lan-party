@@ -15,6 +15,8 @@ data class RoomInfo(
     val needsPassword: Boolean = false,
     val protocol: Int = 1,
     val state: String = "waiting",
+    /** "classic" or "tian_di_laizi". */
+    val mode: String = "classic",
     val updatedAt: Long = 0L,
 )
 

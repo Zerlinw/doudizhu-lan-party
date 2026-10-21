@@ -85,7 +85,7 @@ object GameRules {
                 if (!hand.containsAll(action.cards)) {
                     throw IllegalActionException("BAD_CARDS", "手牌中没有这些牌")
                 }
-                val parsed = HandParser.parse(action.cards)
+                val parsed = HandParser.parse(action.cards, state.laiziRanks)
                     ?: throw IllegalActionException("BAD_CARDS", "这不是合法的牌型")
                 if (!parsed.canBeat(state.lastHand)) {
                     throw IllegalActionException("CANNOT_BEAT", "管不上上家的牌")
@@ -146,6 +146,11 @@ object GameRules {
     private fun applyDeal(state: GameState, seed: Long): GameState {
         val dealt = dealCards(seed)
         val round = state.round + 1
+        val laizi = if (state.mode == GameMode.TIAN_DI_LAIZI) {
+            LaiziInfo(tianRank = pickLaiziRank(seed))
+        } else {
+            null
+        }
         val players = state.players.map { player ->
             player.copy(
                 hand = dealt.hands[player.seat],
@@ -154,11 +159,13 @@ object GameRules {
                 bid = null,
             )
         }
+        val laiziText = laizi?.let { " · 天癞子 ${it.tianRank.label}" }.orEmpty()
         return state.copy(
             phase = Phase.BIDDING,
             round = round,
             players = players,
             bottomCards = dealt.bottomCards,
+            laizi = laizi,
             landlordSeat = null,
             currentSeat = round % 3,
             lastHand = null,
@@ -173,7 +180,7 @@ object GameRules {
             winnerSeat = null,
             settlement = null,
             seed = seed,
-            log = (state.log + "第 $round 局开始 · 发牌完成").takeLast(60),
+            log = (state.log + "第 $round 局开始 · 发牌完成$laiziText").takeLast(60),
         )
     }
 
@@ -206,6 +213,21 @@ object GameRules {
     private fun assignLandlord(state: GameState, seat: Int, bid: Int): GameState {
         val bottom = state.bottomCards
         val bottomFactor = if (bottom.any { it.rank.isJoker }) 2 else 1
+        val laizi = if (state.mode == GameMode.TIAN_DI_LAIZI) {
+            val current = state.laizi
+            if (current != null && current.diRank == null) {
+                current.copy(
+                    diRank = pickLaiziRank(
+                        seed = state.seed xor 0x517CC1B727220A95L,
+                        exclude = setOf(current.tianRank),
+                    ),
+                )
+            } else {
+                current
+            }
+        } else {
+            null
+        }
         val landlord = state.player(seat)
         val hand = (landlord.hand + bottom).sorted()
         val players = state.players.map { player ->
@@ -216,9 +238,11 @@ object GameRules {
             }
         }
         val bonusText = if (bottomFactor > 1) "，底牌含王 ×2" else ""
+        val diText = laizi?.diRank?.let { "，地癞子 ${it.label}" }.orEmpty()
         return state.copy(
             phase = Phase.PLAYING,
             players = players,
+            laizi = laizi,
             landlordSeat = seat,
             currentSeat = seat,
             lastHand = null,
@@ -226,21 +250,22 @@ object GameRules {
             passStreak = 0,
             multiplier = bid * bottomFactor,
             log = (state.log +
-                "${landlord.name} 成为地主（$bid 分$bonusText），底牌 ${bottom.joinToString(" ")}").takeLast(60),
+                "${landlord.name} 成为地主（$bid 分$bonusText$diText），底牌 ${bottom.joinToString(" ")}").takeLast(60),
         )
     }
 
     private fun applyPlay(state: GameState, seat: Int, cards: List<Card>): GameState {
         val actor = state.player(seat)
-        val hand = HandParser.parse(cards) ?: error("validated play must parse")
+        val hand = HandParser.parse(cards, state.laiziRanks) ?: error("validated play must parse")
         val remaining = actor.hand.toMutableList()
         for (card in cards) {
             if (!remaining.remove(card)) {
                 throw IllegalActionException("BAD_CARDS", "手牌中没有这些牌")
             }
         }
-        val isBomb = hand.type == HandType.BOMB || hand.type == HandType.ROCKET
-        val multiplier = if (isBomb) state.multiplier * 2 else state.multiplier
+        val isBomb = hand.type.isBomb
+        val factor = bombFactor(hand, state.mode)
+        val multiplier = if (isBomb) state.multiplier * factor else state.multiplier
         val bombs = if (isBomb) state.bombCount + 1 else state.bombCount
         val playCounts = state.playCounts.toMutableList().also { it[seat] = it[seat] + 1 }
 
@@ -255,12 +280,26 @@ object GameRules {
                 playCounts = playCounts,
             )
             .log("${actor.name} 出 ${hand.type.label}：${hand.cards.joinToString(" ")}")
-        if (isBomb) next = next.log("炸弹！倍数 ×2 → ${multiplier}")
+        if (isBomb) next = next.log("${hand.type.label}！倍数 ×$factor → $multiplier")
 
         if (remaining.isEmpty()) {
             return settle(next, seat)
         }
         return next.copy(currentSeat = state.nextSeat(seat))
+    }
+
+    /**
+     * 天地癞子 bomb ladder:
+     * 4-card soft x2, 4-card hard/pure x4, 5+ cards and rocket x6.
+     * Classic mode keeps the original "every bomb x2" rule.
+     */
+    private fun bombFactor(hand: Hand, mode: GameMode): Int = when {
+        !hand.type.isBomb -> 1
+        mode == GameMode.CLASSIC -> 2
+        hand.type == HandType.ROCKET -> 6
+        hand.cards.size >= 5 -> 6
+        hand.type == HandType.SOFT_BOMB -> 2
+        else -> 4
     }
 
     private fun applyPass(state: GameState, seat: Int): GameState {
@@ -302,6 +341,7 @@ object GameRules {
             phase = Phase.WAITING,
             players = players,
             bottomCards = emptyList(),
+            laizi = null,
             landlordSeat = null,
             currentSeat = 0,
             lastHand = null,

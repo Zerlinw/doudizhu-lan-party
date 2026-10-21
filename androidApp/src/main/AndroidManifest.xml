@@ -21,9 +21,10 @@
 
         <activity
             android:name="com.ddz.android.MainActivity"
-            android:configChanges="orientation|screenSize|keyboardHidden|uiMode"
+            android:configChanges="keyboardHidden|uiMode"
             android:exported="true"
-            android:screenOrientation="portrait"
+            android:resizeableActivity="true"
+            android:screenOrientation="fullSensor"
             android:theme="@style/Theme.Ddz"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>

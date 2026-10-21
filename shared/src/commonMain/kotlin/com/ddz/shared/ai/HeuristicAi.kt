@@ -44,6 +44,7 @@ class HeuristicAi : AiStrategy {
         val counts = hand.rankHistogram()
         val bombs = counts.count { it.value == 4 }
         val hasRocket = counts.keys.containsAll(listOf(Rank.SMALL_JOKER, Rank.BIG_JOKER))
+        val laiziCount = hand.count { it.rank in state.laiziRanks }
         var power = 0
         power += bombs * 10
         if (hasRocket) power += 8
@@ -51,6 +52,8 @@ class HeuristicAi : AiStrategy {
         power += (counts[Rank.SMALL_JOKER] ?: 0) * 6
         power += (counts[Rank.TWO] ?: 0) * 2
         power += (counts[Rank.ACE] ?: 0)
+        // Every wild card is a flexible extra pair/triple/bomb piece.
+        power += laiziCount * 3
         return when {
             power >= 18 -> 3
             power >= 12 -> 2
@@ -62,10 +65,11 @@ class HeuristicAi : AiStrategy {
     private fun decidePlay(state: GameState, seat: Int): GameAction {
         val me = state.player(seat)
         val last = state.lastHand
+        val laiziRanks = state.laiziRanks
         if (last == null) return lead(state, seat)
 
         // Go out in one move whenever possible.
-        val whole = HandParser.parse(me.hand)
+        val whole = HandParser.parse(me.hand, laiziRanks)
         if (whole != null && whole.canBeat(last)) return GameAction.Play(seat, me.hand)
 
         val lastSeat = state.lastHandSeat
@@ -73,15 +77,15 @@ class HeuristicAi : AiStrategy {
             return GameAction.Pass(seat)
         }
 
-        val options = HandFinder.beating(me.hand, last)
+        val options = HandFinder.beating(me.hand, last, laiziRanks)
         if (options.isEmpty()) return GameAction.Pass(seat)
 
         val safe = options.filter { !breaksBombOrRocket(me.hand, it) }
-        val plain = safe.filter { it.type != HandType.BOMB && it.type != HandType.ROCKET }
+        val plain = safe.filter { !it.type.isBomb }
         val cheapest = plain.minWithOrNull(compareBy({ it.mainRank }, { it.size }))
         if (cheapest != null) return GameAction.Play(seat, cheapest.cards)
 
-        val bombs = options.filter { it.type == HandType.BOMB || it.type == HandType.ROCKET }
+        val bombs = options.filter { it.type.isBomb }
         val minOpponent = minOpponentCards(state, seat)
         if (bombs.isNotEmpty() && (minOpponent <= 2 || me.cardCount <= 4)) {
             val bomb = bombs.minByOrNull { it.mainRank } ?: bombs.first()
@@ -93,15 +97,16 @@ class HeuristicAi : AiStrategy {
     private fun lead(state: GameState, seat: Int): GameAction {
         val me = state.player(seat)
         if (me.hand.isEmpty()) return GameAction.Pass(seat)
+        val laiziRanks = state.laiziRanks
 
-        val whole = HandParser.parse(me.hand)
+        val whole = HandParser.parse(me.hand, laiziRanks)
         if (whole != null) return GameAction.Play(seat, me.hand)
 
-        val groups = HandAnalyzer.leadCandidates(me.hand)
+        val groups = HandAnalyzer.leadCandidates(me.hand, laiziRanks)
         if (groups.isEmpty()) return GameAction.Play(seat, listOf(me.hand.first()))
 
         val minOpponent = minOpponentCards(state, seat)
-        val plain = groups.filter { it.type != HandType.BOMB && it.type != HandType.ROCKET }
+        val plain = groups.filter { !it.type.isBomb }
         var pool = if (plain.isNotEmpty()) plain else groups
         if (minOpponent <= 1) {
             val multi = pool.filter { it.cards.size >= 2 }
@@ -134,7 +139,7 @@ class HeuristicAi : AiStrategy {
 
     /** True when playing [candidate] takes cards out of an intact bomb or the rocket. */
     private fun breaksBombOrRocket(hand: List<Card>, candidate: Hand): Boolean {
-        if (candidate.type == HandType.BOMB || candidate.type == HandType.ROCKET) return false
+        if (candidate.type.isBomb) return false
         val hist = hand.rankHistogram()
         val used = candidate.cards.rankHistogram()
         val bombBroken = used.any { (rank, n) -> (hist[rank] ?: 0) == 4 && n in 1..3 }

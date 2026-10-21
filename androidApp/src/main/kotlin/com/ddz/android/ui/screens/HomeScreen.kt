@@ -1,6 +1,8 @@
 package com.ddz.android.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,11 +36,13 @@ import androidx.compose.ui.unit.sp
 import com.ddz.android.ui.LobbyUiState
 import com.ddz.android.ui.components.ErrorBanner
 import com.ddz.android.ui.components.GoldOutlineButton
+import com.ddz.android.ui.components.OrientationToggle
 import com.ddz.android.ui.components.PlayingCard
 import com.ddz.android.ui.components.PrimaryButton
 import com.ddz.android.ui.components.WoodBackground
 import com.ddz.android.ui.theme.DdzColors
 import com.ddz.shared.game.core.Card
+import com.ddz.shared.game.core.GameMode
 import com.ddz.shared.game.core.Rank
 import com.ddz.shared.game.core.Suit
 
@@ -46,6 +50,7 @@ import com.ddz.shared.game.core.Suit
 fun HomeScreen(
     ui: LobbyUiState,
     onNameChange: (String) -> Unit,
+    onModeChange: (GameMode) -> Unit,
     onCreate: () -> Unit,
     onJoin: () -> Unit,
     onPractice: () -> Unit,
@@ -61,7 +66,13 @@ fun HomeScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                OrientationToggle()
+            }
             HeroCards()
             Text(
                 text = "斗地主",
@@ -99,6 +110,34 @@ fun HomeScreen(
                         colors = fieldColors(),
                     )
                 }
+            }
+
+            Spacer(Modifier.height(16.dp))
+            Text(
+                text = "玩法",
+                color = DdzColors.Muted,
+                fontSize = 11.sp,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(7.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                ModeCard(
+                    title = "经典",
+                    subtitle = "标准斗地主",
+                    selected = ui.selectedMode == GameMode.CLASSIC,
+                    onClick = { onModeChange(GameMode.CLASSIC) },
+                    modifier = Modifier.weight(1f),
+                )
+                ModeCard(
+                    title = "天地癞子",
+                    subtitle = "8 张癞子 · 软炸/硬炸",
+                    selected = ui.selectedMode == GameMode.TIAN_DI_LAIZI,
+                    onClick = { onModeChange(GameMode.TIAN_DI_LAIZI) },
+                    modifier = Modifier.weight(1f),
+                )
             }
 
             Spacer(Modifier.height(18.dp))
@@ -145,6 +184,41 @@ fun fieldColors() = OutlinedTextFieldDefaults.colors(
     focusedTextColor = DdzColors.Cream,
     unfocusedTextColor = DdzColors.Cream,
 )
+
+@Composable
+private fun ModeCard(
+    title: String,
+    subtitle: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        color = if (selected) Color(0x332A5B40) else Color(0x22FFFFFF),
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(
+            1.dp,
+            if (selected) DdzColors.Gold else Color(0x33FFFFFF),
+        ),
+        modifier = modifier.clickable(onClick = onClick),
+    ) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+            Text(
+                text = title,
+                color = if (selected) DdzColors.GoldSoft else DdzColors.Cream,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                color = DdzColors.Muted,
+                fontSize = 9.sp,
+                maxLines = 1,
+            )
+        }
+    }
+}
 
 @Composable
 private fun HeroCards() {

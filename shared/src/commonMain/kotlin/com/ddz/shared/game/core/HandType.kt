@@ -19,7 +19,27 @@ enum class HandType(val label: String) {
     FOUR_TWO("四带二"),
     FOUR_TWO_PAIR("四带两对"),
     BOMB("炸弹"),
+    SOFT_BOMB("软炸"),
+    PURE_LAIZI_BOMB("癞子炸"),
     ROCKET("王炸"),
+    ;
+
+    /** True for every bomb family member, including the rocket. */
+    val isBomb: Boolean
+        get() = this == BOMB || this == SOFT_BOMB || this == PURE_LAIZI_BOMB || this == ROCKET
+
+    /**
+     * Bomb ordering within the same card count:
+     * 软炸(0) < 硬炸(1) < 纯癞子炸(2) < 王炸(3).
+     */
+    val bombTier: Int
+        get() = when (this) {
+            SOFT_BOMB -> 0
+            BOMB -> 1
+            PURE_LAIZI_BOMB -> 2
+            ROCKET -> 3
+            else -> -1
+        }
 }
 
 /** Shape of the kickers attached to an airplane / triple. */
@@ -44,6 +64,9 @@ data class Hand(
 ) {
     val size: Int get() = cards.size
 
+    /** True for any bomb family hand. */
+    val isBomb: Boolean get() = type.isBomb
+
     /** True when this hand may be played on top of [previous] (null = free lead). */
     fun canBeat(previous: Hand?): Boolean = beats(this, previous)
 
@@ -57,8 +80,22 @@ fun beats(hand: Hand?, previous: Hand?): Boolean {
     if (previous == null) return true
     if (hand.type == HandType.ROCKET) return previous.type != HandType.ROCKET
     if (previous.type == HandType.ROCKET) return false
-    if (hand.type == HandType.BOMB && previous.type != HandType.BOMB) return true
-    if (previous.type == HandType.BOMB && hand.type != HandType.BOMB) return false
+
+    val newBomb = hand.type.isBomb
+    val oldBomb = previous.type.isBomb
+    if (newBomb && !oldBomb) return true
+    if (!newBomb && oldBomb) return false
+    if (newBomb && oldBomb) {
+        // 天地癞子 bomb ladder: more cards wins, then soft < hard < pure bomb.
+        if (hand.cards.size != previous.cards.size) {
+            return hand.cards.size > previous.cards.size
+        }
+        if (hand.type.bombTier != previous.type.bombTier) {
+            return hand.type.bombTier > previous.type.bombTier
+        }
+        return hand.mainRank > previous.mainRank
+    }
+
     if (hand.type != previous.type) return false
     if (hand.chain != previous.chain || hand.wing != previous.wing) return false
     if (hand.cards.size != previous.cards.size) return false
@@ -79,8 +116,18 @@ fun beats(hand: Hand?, previous: Hand?): Boolean {
  */
 object HandParser {
 
-    /** Parse [cards] into a [Hand], or return null when the cards form no legal shape. */
-    fun parse(cards: List<Card>): Hand? {
+    /** Parse [cards] in classic (no wild-card) mode. */
+    fun parse(cards: List<Card>): Hand? = parseClassic(cards)
+
+    /**
+     * Parse [cards] allowing [laiziRanks] to act as wild cards.
+     * When no wild rank is given this is exactly [parse].
+     */
+    fun parse(cards: List<Card>, laiziRanks: Set<Rank>): Hand? =
+        if (laiziRanks.isEmpty()) parseClassic(cards) else LaiziHandParser.parse(cards, laiziRanks)
+
+    /** Classic parser, also used by the laizi parser for wild-free selections. */
+    internal fun parseClassic(cards: List<Card>): Hand? {
         if (cards.isEmpty()) return null
         val sorted = cards.sorted()
         val counts: Map<Rank, Int> = sorted.groupingBy { it.rank }.eachCount()
@@ -210,6 +257,10 @@ object HandParser {
 
 /** Convenience wrapper around [HandParser.parse]. */
 fun parseHand(cards: List<Card>): Hand? = HandParser.parse(cards)
+
+/** Convenience wrapper for laizi-aware parsing. */
+fun parseHand(cards: List<Card>, laiziRanks: Set<Rank>): Hand? =
+    HandParser.parse(cards, laiziRanks)
 
 /** Group cards by rank, preserving no particular order. */
 fun List<Card>.rankCounts(): Map<Rank, Int> = groupingBy { it.rank }.eachCount()

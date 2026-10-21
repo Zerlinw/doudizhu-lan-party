@@ -9,6 +9,7 @@ import com.ddz.shared.discovery.currentTimeMillis
 import com.ddz.shared.discovery.deviceName
 import com.ddz.shared.discovery.localIpAddresses
 import com.ddz.shared.game.core.Card
+import com.ddz.shared.game.core.GameMode
 import com.ddz.shared.game.core.GameState
 import com.ddz.shared.game.core.Phase
 import com.ddz.shared.game.core.Player
@@ -43,6 +44,7 @@ data class LobbyUiState(
     val game: GameState? = null,
     val isHost: Boolean = false,
     val isPractice: Boolean = false,
+    val selectedMode: GameMode = GameMode.CLASSIC,
     val busy: Boolean = false,
     val pendingAddress: String = "",
     val error: String? = null,
@@ -77,6 +79,10 @@ class LobbyViewModel : ViewModel() {
         _ui.update { it.copy(playerName = name.take(16)) }
     }
 
+    fun selectMode(mode: GameMode) {
+        _ui.update { it.copy(selectedMode = mode) }
+    }
+
     fun showJoin() {
         _ui.update { it.copy(screen = Screen.JOIN, error = null, rooms = emptyList()) }
         beginScan()
@@ -92,7 +98,11 @@ class LobbyViewModel : ViewModel() {
         val name = currentName()
         viewModelScope.launch {
             _ui.update { it.copy(busy = true, error = null) }
-            val host = HostSession(name, viewModelScope)
+            val host = HostSession(
+                hostName = name,
+                scope = viewModelScope,
+                mode = _ui.value.selectedMode,
+            )
             try {
                 val room = host.start()
                 session = host
@@ -126,7 +136,11 @@ class LobbyViewModel : ViewModel() {
 
     fun startPractice() {
         if (session != null) return
-        val local = LocalSession(currentName(), viewModelScope)
+        val local = LocalSession(
+            playerName = currentName(),
+            scope = viewModelScope,
+            mode = _ui.value.selectedMode,
+        )
         session = local
         observe(local)
         _ui.update {

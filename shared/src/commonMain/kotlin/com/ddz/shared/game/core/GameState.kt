@@ -62,6 +62,8 @@ data class GameState(
     val phase: Phase = Phase.WAITING,
     val seq: Long = 0L,
     val round: Int = 0,
+    val mode: GameMode = GameMode.CLASSIC,
+    val laizi: LaiziInfo? = null,
     val players: List<Player> = (0..2).map { Player(seat = it) },
     val bottomCards: List<Card> = emptyList(),
     val landlordSeat: Int? = null,
@@ -87,6 +89,12 @@ data class GameState(
     val activePlayer: Player? get() = players.firstOrNull { it.seat == currentSeat }
 
     val allSeated: Boolean get() = players.size == 3 && players.all { it.isSeated }
+
+    /** True when the table is running 天地癞子. */
+    val isLaiziMode: Boolean get() = mode == GameMode.TIAN_DI_LAIZI
+
+    /** All ranks currently acting as wild cards (天 before bidding, 天+地 afterwards). */
+    val laiziRanks: Set<Rank> get() = laizi?.ranks ?: emptySet()
 
     /** The three bottom cards are public once a landlord owns them. */
     val bottomVisible: Boolean get() = phase == Phase.PLAYING || phase == Phase.SETTLING
@@ -118,6 +126,6 @@ data class GameState(
 
     companion object {
         /** A fresh table with three empty seats. */
-        fun fresh(): GameState = GameState()
+        fun fresh(mode: GameMode = GameMode.CLASSIC): GameState = GameState(mode = mode)
     }
 }

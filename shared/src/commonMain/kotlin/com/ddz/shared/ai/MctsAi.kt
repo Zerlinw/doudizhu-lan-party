@@ -77,12 +77,12 @@ class MctsAi(
         if (hand.isEmpty()) return emptyList()
         val last = state.lastHand
         val plays = if (last == null) {
-            HandAnalyzer.leadCandidates(hand)
+            HandAnalyzer.leadCandidates(hand, state.laiziRanks)
         } else {
-            HandFinder.beating(hand, last)
+            HandFinder.beating(hand, last, state.laiziRanks)
         }
         val actions = mutableListOf<GameAction>()
-        val whole = HandParser.parse(hand)
+        val whole = HandParser.parse(hand, state.laiziRanks)
         if (whole != null && (last == null || whole.canBeat(last))) {
             actions += GameAction.Play(seat, hand)
         }
@@ -127,11 +127,11 @@ class MctsAi(
         if (hand.isEmpty()) return null
         val last = state.lastHand
         if (last == null) {
-            val leads = HandAnalyzer.leadCandidates(hand)
+            val leads = HandAnalyzer.leadCandidates(hand, state.laiziRanks)
             val cards = leads.randomOrNull(random)?.cards ?: listOf(hand.first())
             return GameAction.Play(seat, cards)
         }
-        val beats = HandFinder.beating(hand, last)
+        val beats = HandFinder.beating(hand, last, state.laiziRanks, fullSearch = false)
         if (beats.isEmpty()) return GameAction.Pass(seat)
         if (random.nextInt(100) < 30) return GameAction.Pass(seat)
         return GameAction.Play(seat, beats.random(random).cards)

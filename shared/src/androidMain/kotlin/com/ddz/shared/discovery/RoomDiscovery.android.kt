@@ -1,6 +1,8 @@
 package com.ddz.shared.discovery
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.os.Build
@@ -54,6 +56,7 @@ actual class RoomDiscovery actual constructor() {
             setAttribute("needsPassword", room.needsPassword.toString())
             setAttribute("protocol", Protocol.VERSION.toString())
             setAttribute("state", room.state)
+            setAttribute("mode", room.mode)
         }
 
         suspendCancellableCoroutine { cont ->
@@ -149,20 +152,63 @@ actual class RoomDiscovery actual constructor() {
             needsPassword = text("needsPassword")?.toBooleanStrictOrNull() ?: false,
             protocol = text("protocol")?.toIntOrNull() ?: Protocol.VERSION,
             state = text("state") ?: "waiting",
+            mode = text("mode") ?: "classic",
             updatedAt = currentTimeMillis(),
         )
     }
 }
 
-actual fun localIpAddresses(): List<String> = runCatching {
-    NetworkInterface.getNetworkInterfaces().toList()
-        .filter { it.isUp && !it.isLoopback }
-        .flatMap { it.inetAddresses.toList() }
-        .filterIsInstance<Inet4Address>()
-        .filter { !it.isLoopbackAddress && it.isSiteLocalAddress }
-        .mapNotNull { it.hostAddress }
-        .distinct()
-}.getOrElse { emptyList() }
+actual fun localIpAddresses(): List<String> {
+    val excludedPrefixes = listOf(
+        "tun", "ppp", "rmnet", "clat", "dummy", "ip6tnl", "sit", "v4-", "ifb",
+        "ccmni", "vgate",
+    )
+    val entries = runCatching {
+        NetworkInterface.getNetworkInterfaces().toList()
+            .filter { it.isUp && !it.isLoopback }
+            .flatMap { network ->
+                network.inetAddresses.toList()
+                    .filterIsInstance<Inet4Address>()
+                    .filter { !it.isLoopbackAddress && it.isSiteLocalAddress }
+                    .mapNotNull { address -> address.hostAddress?.let { network.name to it } }
+            }
+    }.getOrElse { emptyList() }
+
+    // Java's NetworkInterface may hide wlan0 on some ROMs; the Wi-Fi transport
+    // from ConnectivityManager is the authoritative source for the LAN address.
+    val wifiAddresses = runCatching {
+        val manager = AndroidPlatform.requireContext()
+            .getSystemService(ConnectivityManager::class.java)
+        manager.allNetworks.flatMap { network ->
+            val capabilities = manager.getNetworkCapabilities(network)
+            if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) != true) {
+                emptyList()
+            } else {
+                manager.getLinkProperties(network)?.linkAddresses.orEmpty().mapNotNull { link ->
+                    (link.address as? Inet4Address)?.hostAddress
+                }
+            }
+        }
+    }.getOrElse { emptyList() }
+
+    val usable = entries.filterNot { (name, _) ->
+        excludedPrefixes.any { prefix -> name.lowercase().startsWith(prefix) }
+    }
+    val selected = if (usable.isNotEmpty()) usable else entries
+    val result = (
+        wifiAddresses +
+            selected.sortedWith(compareBy({ interfacePriority(it.first) }, { it.second }))
+                .map { it.second }
+        ).distinct()
+    return result
+}
+
+private fun interfacePriority(name: String): Int = when {
+    name.startsWith("wlan") -> 0
+    name.startsWith("eth") -> 1
+    name.startsWith("ap") -> 2
+    else -> 3
+}
 
 actual fun deviceName(): String {
     val manufacturer = Build.MANUFACTURER?.takeIf { it.isNotBlank() } ?: ""

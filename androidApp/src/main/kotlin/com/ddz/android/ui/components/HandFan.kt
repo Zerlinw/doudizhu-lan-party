@@ -17,10 +17,12 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ddz.android.ui.theme.DdzColors
 import com.ddz.shared.game.core.Card
+import com.ddz.shared.game.core.Rank
 import kotlinx.coroutines.delay
 import kotlin.math.min
 
@@ -35,6 +37,8 @@ fun HandFan(
     round: Int,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    maxCardWidth: Dp = 68.dp,
+    laiziRanks: Set<Rank> = emptySet(),
     onToggle: (Card) -> Unit,
 ) {
     BoxWithConstraints(modifier.fillMaxWidth()) {
@@ -49,9 +53,10 @@ fun HandFan(
             val count = cards.size
             val available = maxWidth
             val cardWidth = if (count == 1) {
-                68.dp
+                maxCardWidth
             } else {
-                ((available - 8.dp) / (1f + (count - 1) * 0.55f)).coerceIn(24.dp, 68.dp)
+                ((available - 8.dp) / (1f + (count - 1) * 0.55f))
+                    .coerceIn(24.dp, maxCardWidth)
             }
             val cardHeight = cardWidth * 1.45f
             val spacing = if (count == 1) {
@@ -82,6 +87,7 @@ fun HandFan(
                                     width = cardWidth,
                                     selected = isSelected,
                                     enabled = enabled,
+                                    isLaizi = card.rank in laiziRanks,
                                     onClick = { onToggle(card) },
                                 )
                             }

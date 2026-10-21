@@ -96,12 +96,13 @@ object HandAnalyzer {
     }
 
     /** Groups that can be played as a legal lead, including the whole hand. */
-    fun leadCandidates(hand: List<Card>): List<Hand> {
+    fun leadCandidates(hand: List<Card>, laiziRanks: Set<Rank> = emptySet()): List<Hand> {
         val result = mutableListOf<Hand>()
-        HandParser.parse(hand)?.let { result += it }
+        HandParser.parse(hand, laiziRanks)?.let { result += it }
         for (group in decompose(hand)) {
-            HandParser.parse(group)?.let { result += it }
+            HandParser.parse(group, laiziRanks)?.let { result += it }
         }
+        result += HandFinder.bombs(hand, laiziRanks)
         return result.distinctBy { it.cards.map { c -> c.code }.sorted() }
     }
 }

@@ -4,11 +4,14 @@ import com.ddz.shared.ai.HandFinder
 import com.ddz.shared.ai.HeuristicAi
 import com.ddz.shared.ai.MctsAi
 import com.ddz.shared.game.core.GameAction
+import com.ddz.shared.game.core.GameMode
 import com.ddz.shared.game.core.GameRules
 import com.ddz.shared.game.core.GameState
 import com.ddz.shared.game.core.HandParser
+import com.ddz.shared.game.core.LaiziInfo
 import com.ddz.shared.game.core.Phase
 import com.ddz.shared.game.core.Player
+import com.ddz.shared.game.core.pickLaiziRank
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -143,7 +146,6 @@ class AiTest {
             assertEquals(Phase.SETTLING, state.phase, "seed $seed did not settle in $steps steps")
             val settlement = assertNotNull(state.settlement)
             assertEquals(0, settlement.deltas.sum(), "seed $seed deltas")
-            assertEquals(0, state.log.size.coerceAtMost(0))
             assertTrue(state.log.isNotEmpty())
         }
     }
@@ -159,5 +161,24 @@ class AiTest {
         )
         val action = MctsAi(budgetMs = 80).decide(state, 0)
         assertEquals(null, GameRules.validate(state, action))
+    }
+
+    @Test
+    fun laiziSelfPlayTerminatesWithLegalActions() = runTest {
+        for (seed in 1L..3L) {
+            var state = TestCards.biddingState(seed).copy(
+                mode = GameMode.TIAN_DI_LAIZI,
+                laizi = LaiziInfo(pickLaiziRank(seed)),
+            )
+            var steps = 0
+            while (state.phase != Phase.SETTLING && steps < 600) {
+                val action = ai.decide(state, state.currentSeat)
+                state = GameRules.reduce(state, action)
+                steps += 1
+            }
+            assertEquals(Phase.SETTLING, state.phase, "laizi seed $seed did not settle")
+            assertNotNull(state.settlement)
+            assertEquals(0, state.settlement!!.deltas.sum())
+        }
     }
 }

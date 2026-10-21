@@ -105,15 +105,36 @@ actual class RoomDiscovery actual constructor() {
     }
 }
 
-actual fun localIpAddresses(): List<String> = runCatching {
-    NetworkInterface.getNetworkInterfaces().toList()
-        .filter { it.isUp && !it.isLoopback }
-        .flatMap { it.inetAddresses.toList() }
-        .filterIsInstance<Inet4Address>()
-        .filter { !it.isLoopbackAddress && it.isSiteLocalAddress }
-        .mapNotNull { it.hostAddress }
+actual fun localIpAddresses(): List<String> {
+    val excludedPrefixes = listOf(
+        "tun", "ppp", "rmnet", "clat", "dummy", "ip6tnl", "sit", "v4-", "ifb", "utun",
+    )
+    val entries = runCatching {
+        NetworkInterface.getNetworkInterfaces().toList()
+            .filter { it.isUp && !it.isLoopback }
+            .flatMap { network ->
+                network.inetAddresses.toList()
+                    .filterIsInstance<Inet4Address>()
+                    .filter { !it.isLoopbackAddress && it.isSiteLocalAddress }
+                    .mapNotNull { address -> address.hostAddress?.let { network.name to it } }
+            }
+    }.getOrElse { emptyList() }
+    val usable = entries.filterNot { (name, _) ->
+        excludedPrefixes.any { prefix -> name.lowercase().startsWith(prefix) }
+    }
+    val selected = if (usable.isNotEmpty()) usable else entries
+    return selected
+        .sortedWith(compareBy({ interfacePriority(it.first) }, { it.second }))
+        .map { it.second }
         .distinct()
-}.getOrElse { emptyList() }
+}
+
+private fun interfacePriority(name: String): Int = when {
+    name.startsWith("wlan") || name.startsWith("wlp") -> 0
+    name.startsWith("eth") || name.startsWith("en") -> 1
+    name.startsWith("ap") -> 2
+    else -> 3
+}
 
 actual fun deviceName(): String {
     val os = System.getProperty("os.name") ?: "Desktop"

@@ -10,7 +10,7 @@ import kotlinx.serialization.json.Json
 /** Wire protocol constants shared by host and clients. */
 object Protocol {
     /** Bumped whenever the payload schema changes incompatibly. */
-    const val VERSION: Int = 1
+    const val VERSION: Int = 2
 
     /** Default authoritative host TCP port. */
     const val DEFAULT_PORT: Int = 9527

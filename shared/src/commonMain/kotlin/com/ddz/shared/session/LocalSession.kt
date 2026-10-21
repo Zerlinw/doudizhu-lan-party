@@ -6,6 +6,7 @@ import com.ddz.shared.discovery.RoomInfo
 import com.ddz.shared.game.GameEngine
 import com.ddz.shared.game.core.Card
 import com.ddz.shared.game.core.GameAction
+import com.ddz.shared.game.core.GameMode
 import com.ddz.shared.game.core.GameState
 import com.ddz.shared.game.core.Phase
 import com.ddz.shared.game.core.Player
@@ -26,13 +27,20 @@ class LocalSession(
     private val scope: CoroutineScope,
     seed: Long = Random.nextLong(),
     strategy: AiStrategy = HeuristicAi(),
+    mode: GameMode = GameMode.CLASSIC,
 ) : GameSession {
 
-    private val engine = GameEngine()
+    private val engine = GameEngine(GameState.fresh(mode))
     private val name = playerName.trim().ifBlank { "我" }
 
     private val _room = MutableStateFlow<RoomInfo?>(
-        RoomInfo(name = "单机练习", hostIp = "127.0.0.1", port = 0, playerCount = 3),
+        RoomInfo(
+            name = "单机练习",
+            hostIp = "127.0.0.1",
+            port = 0,
+            playerCount = 3,
+            mode = mode.name.lowercase(),
+        ),
     )
     private val _state = MutableStateFlow<GameState?>(null)
     private val _seats = MutableStateFlow(List(3) { Player(seat = it) })

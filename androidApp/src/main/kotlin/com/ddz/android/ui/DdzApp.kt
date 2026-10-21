@@ -26,6 +26,7 @@ fun DdzApp(viewModel: LobbyViewModel) {
         Screen.HOME -> HomeScreen(
             ui = ui,
             onNameChange = viewModel::onNameChange,
+            onModeChange = viewModel::selectMode,
             onCreate = viewModel::createRoom,
             onJoin = viewModel::showJoin,
             onPractice = viewModel::startPractice,

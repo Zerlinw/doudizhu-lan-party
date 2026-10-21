@@ -205,6 +205,10 @@ private fun RoomCard(found: DiscoveredRoom, onJoin: () -> Unit) {
                 Spacer(Modifier.height(6.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     TagChip("${room.playerCount}/3 人", color = DdzColors.Success)
+                    TagChip(
+                        text = if (room.mode == "tian_di_laizi") "天地癞子" else "经典",
+                        color = if (room.mode == "tian_di_laizi") DdzColors.Warning else DdzColors.Muted,
+                    )
                     if (room.needsPassword) TagChip("需密码", color = DdzColors.Warning)
                     if (room.state == "playing") TagChip("进行中", color = DdzColors.Warning)
                 }

@@ -45,18 +45,21 @@ fun PlayingCard(
     modifier: Modifier = Modifier,
     selected: Boolean = false,
     enabled: Boolean = true,
+    isLaizi: Boolean = false,
     onClick: (() -> Unit)? = null,
 ) {
     val height = width * 1.45f
     val shape = RoundedCornerShape(width * 0.15f)
     val ink = if (card.suit.isRed) DdzColors.Red else DdzColors.Ink
-    val borderWidth = if (selected) 2.dp else 1.dp
+    val borderWidth = if (selected || isLaizi) 2.dp else 1.dp
     val faceBrush = if (card.isJoker) {
         if (card.rank.label == "大王") {
             Brush.verticalGradient(listOf(Color(0xFFF7E7B0), Color(0xFFD4AF37), Color(0xFFF5F1E8)))
         } else {
             Brush.verticalGradient(listOf(Color(0xFFEDEDED), Color(0xFFB9B9C2), Color(0xFFF5F1E8)))
         }
+    } else if (isLaizi) {
+        Brush.verticalGradient(listOf(Color(0xFFFFF6D6), Color(0xFFEED9A0)))
     } else {
         Brush.verticalGradient(listOf(DdzColors.Cream, Color(0xFFEFE8D8)))
     }
@@ -65,10 +68,18 @@ fun PlayingCard(
         modifier = modifier
             .width(width)
             .height(height)
-            .shadow(if (selected) 10.dp else 3.dp, shape, clip = false)
+            .shadow(if (selected || isLaizi) 10.dp else 3.dp, shape, clip = false)
             .clip(shape)
             .background(faceBrush)
-            .border(borderWidth, if (selected) DdzColors.Gold else DdzColors.CardEdge, shape)
+            .border(
+                borderWidth,
+                when {
+                    selected -> DdzColors.Gold
+                    isLaizi -> DdzColors.GoldSoft
+                    else -> DdzColors.CardEdge
+                },
+                shape,
+            )
             .then(
                 if (onClick != null) {
                     Modifier.clickable(enabled = enabled) { onClick() }
@@ -81,6 +92,22 @@ fun PlayingCard(
             JokerFace(card, width, ink)
         } else {
             NormalFace(card, width, ink)
+        }
+        if (isLaizi) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(width * 0.04f)
+                    .background(DdzColors.Gold, RoundedCornerShape(width * 0.08f))
+                    .padding(horizontal = width * 0.035f, vertical = width * 0.005f),
+            ) {
+                Text(
+                    text = "癞",
+                    color = DdzColors.Ink,
+                    fontSize = (width.value * 0.20f).coerceAtLeast(7f).sp,
+                    fontWeight = FontWeight.Black,
+                )
+            }
         }
     }
 }

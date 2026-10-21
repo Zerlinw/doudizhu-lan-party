@@ -3,6 +3,7 @@
 ## 1. 传输
 
 - TCP，Host 默认监听 `9527`（占用时自动尝试 `9527..9536`）。
+- 协议版本 **v2**（v1.1 起）；客户端和服务端版本不一致会收到 `VERSION_MISMATCH`。
 - 帧格式：
 
 ```
@@ -33,12 +34,12 @@ data class Msg(
 |---|---|---|---|
 | `HELLO` | `protocol, playerName, avatarSeed` | C→H | 兼容握手（等价 JOIN） |
 | `JOIN` | `playerName, avatarSeed, protocol` | C→H | 加入/重连；同名抢回离线座位 |
-| `ROOM_STATE` | `room, players, yourSeat, hostSeat, phase` | H→C | 座位/房间公开信息（不含手牌） |
+| `ROOM_STATE` | `room(含 mode), players, yourSeat, hostSeat, phase` | H→C | 座位/房间公开信息（不含手牌） |
 | `DEAL` | `round, seed, dealerSeat` | H→C | 新一局开始（动画提示） |
 | `BID` | `seat, score(0..3)` | C→H | 叫分；0 为不叫 |
 | `PLAY` | `seat, cards: List<Int>` | C→H | 出牌，card 为 `rank*10+suit` |
 | `PASS` | `seat` | C→H | 不要 |
-| `SNAPSHOT` | `state, seq` | H→C | 全量脱敏状态；客户端按 seq 丢弃旧包 |
+| `SNAPSHOT` | `state(含 mode/laizi), seq` | H→C | 全量脱敏状态；客户端按 seq 丢弃旧包 |
 | `SYNC_REQ` | `lastKnownSeq` | C→H | 重连后请求补快照 |
 | `HEARTBEAT` | `sentAt` | C→H（每 5s） | 保活 |
 | `ACK` | `seq` | H→C | 已是最新 / 确认 |
@@ -77,3 +78,19 @@ Client                                   Host
 - `lastHand`、`log`、倍数、座位等公开信息保留。
 
 Host 永远只广播脱敏后的状态；客户端状态不可用于作弊。
+
+## 6. 天地癞子状态
+
+`RoomInfo.mode` 为 `classic` 或 `tian_di_laizi`，NSD TXT 记录同步携带，客户端大厅会显示玩法。
+
+`GameState` 新增：
+
+```kotlin
+val mode: GameMode = GameMode.CLASSIC,      // CLASSIC / TIAN_DI_LAIZI
+val laizi: LaiziInfo? = null                 // tianRank, 可选 diRank
+```
+
+- `laizi.tianRank` 在发牌时确定；`diRank` 在地主确定后写入。
+- 快照携带完整癞子信息，客户端无需自行随机；UI 根据 `laiziRanks` 高亮牌面。
+- `HandParser` 与 reducer 使用同一份 `laiziRanks` 校验，保证 Host/Client 一致。
+- 该字段为 v2 协议新增；旧版客户端会被版本检查拒绝。

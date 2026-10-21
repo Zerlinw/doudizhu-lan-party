@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ddz.android.ui.LobbyUiState
@@ -158,8 +159,15 @@ private fun RoomHeader(ui: LobbyUiState) {
                     color = DdzColors.Cream,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
+                TagChip(
+                    text = if (room?.mode == "tian_di_laizi") "天地癞子" else "经典",
+                    color = if (room?.mode == "tian_di_laizi") DdzColors.Warning else DdzColors.Muted,
+                )
+                Spacer(Modifier.width(6.dp))
                 if (ui.isHost) TagChip("你是房主", color = DdzColors.Gold, filled = true)
             }
             Spacer(Modifier.height(8.dp))

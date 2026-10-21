@@ -9,6 +9,7 @@ import com.ddz.shared.discovery.localIpAddresses
 import com.ddz.shared.game.GameEngine
 import com.ddz.shared.game.core.Card
 import com.ddz.shared.game.core.GameAction
+import com.ddz.shared.game.core.GameMode
 import com.ddz.shared.game.core.GameState
 import com.ddz.shared.game.core.IllegalActionException
 import com.ddz.shared.game.core.Phase
@@ -53,9 +54,10 @@ class HostSession(
     private val scope: CoroutineScope,
     private val requestedPort: Int = Protocol.DEFAULT_PORT,
     private val strategy: AiStrategy = HeuristicAi(),
+    private val mode: GameMode = GameMode.CLASSIC,
 ) : GameSession {
 
-    private val engine = GameEngine()
+    private val engine = GameEngine(GameState.fresh(mode))
 
     private val _room = MutableStateFlow<RoomInfo?>(null)
     private val _state = MutableStateFlow<GameState?>(null)
@@ -105,6 +107,7 @@ class HostSession(
             needsPassword = false,
             protocol = Protocol.VERSION,
             state = "waiting",
+            mode = mode.name.lowercase(),
             updatedAt = currentTimeMillis(),
         )
         _room.value = info
