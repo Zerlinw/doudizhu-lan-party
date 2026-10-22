@@ -2,6 +2,10 @@
 
 [![build](https://github.com/Zerlinw/doudizhu-lan-party/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/Zerlinw/doudizhu-lan-party/actions/workflows/build.yml)
 
+[中文](README.md) · [English](README.en.md)
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 > 零服务器、点对点、三台手机开一桌。房主设备是权威 Host，其余设备只发送意图、渲染快照。
 >
 > 作者：**Zerlin** · 仓库：[github.com/Zerlinw/doudizhu-lan-party](https://github.com/Zerlinw/doudizhu-lan-party) · 首期 Android，架构预留 Desktop / iOS。
@@ -200,6 +204,18 @@ keyPassword=******
 4. 音效未内置资源，炸弹用系统触感反馈。
 5. NSD 在部分 ROM 上会被限流，手动 IP 是既定一级兜底。
 6. 横屏为紧凑布局，超小屏（<340dp 高）可能压缩牌桌信息；横屏按钮在首页/牌桌右上角。
+
+## 12. 开源许可
+
+本项目采用 **MIT License** 开源，版权归 **Zerlin (2026)** 所有。
+
+- 许可证全文：[LICENSE](LICENSE)
+- 允许商用、修改、分发、私有使用和再许可，但必须在所有副本或实质性部分中保留版权声明与许可证文本。
+- 软件按 **“AS IS”**（现状）提供，不附带任何明示或默示担保；作者与版权持有人不对使用或无法使用本软件产生的任何索赔、损害或其他责任负责。
+- 第三方依赖（Kotlin、Compose Multiplatform、AndroidX、kotlinx.coroutines、kotlinx.serialization 等）遵循各自许可证，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+- 本项目为独立实现，未包含腾讯《欢乐斗地主》或其他商业游戏的美术、音频、商标或反编译代码；相关名称与商标归各自权利人所有。
+
+> MIT 的“按现状提供 / 免责 / 责任限制”条款用于降低使用风险，但任何许可证都不能保证完全免于第三方主张。如用于商业发行，请自行完成合规审查；本说明不构成法律意见。
 
 ---
 
